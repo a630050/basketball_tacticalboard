@@ -946,11 +946,11 @@
             if(frames.length < 2) return;
             if(currentIdx >= frames.length - 1) { currentIdx = 0; render(); }
             isPlaying = true;
-            let dur = 1650 - parseInt(document.getElementById('speed').value);
 
             const step = () => {
                 if(!isPlaying || currentIdx >= frames.length - 1) { stop(); return; }
-                let dur = 1650 - parseInt(document.getElementById('speed').value);
+                const dur = 1650 - parseInt(document.getElementById('speed').value);
+                const delayMs = parseFloat(document.getElementById('play-delay').value) * 1000;
 
                 currentIdx++;
                 const pd = frames[currentIdx - 1]; // 前一幀
@@ -1032,11 +1032,10 @@
                     }
                 }
                 updateUI();
-                const delayMs = parseInt(document.getElementById('play-delay').value) * 1000;
+                // dur 是動畫時長，delayMs 是禎與禎之間的停留時間
                 playTimer = setTimeout(step, dur + delayMs);
             };
-            const initialDelay = parseFloat(document.getElementById('play-delay').value) * 1000;
-            setTimeout(step, initialDelay);
+            step();
         }
 
         function stop() {
