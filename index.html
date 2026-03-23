@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>專業籃球戰術板 v7.0</title>
     <style>
         :root {
@@ -47,7 +48,7 @@
             position: absolute; width: 28px; height: 28px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-weight: bold; cursor: move; user-select: none;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4); z-index: 10; font-size: 11px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4); z-index: 10; font-size: 11px; touch-action: none;
         }
         .player-a { background: var(--player-a); color: white; border: 2px solid white; }
         .player-b { background: var(--player-b); color: white; border: 2px solid white; }
@@ -86,12 +87,12 @@
         .export-text { color: #aaa; font-size: 12px; }
 
         /* 標註元素 */
-        .annotation { position: absolute; user-select: none; pointer-events: auto; }
+        .annotation { position: absolute; user-select: none; pointer-events: auto; touch-action: none; }
         .annotation-arrow, .annotation-line { cursor: move; display: flex; align-items: center; justify-content: center; }
         .annotation-text { background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.5); padding: 6px; border-radius: 3px; color: white; font-size: 13px; cursor: move; min-width: 60px; white-space: nowrap; }
         .annotation-text.editing { background: rgba(0,0,0,0.7); border: 2px solid #f6ad55; }
         .annotation-text[contenteditable="true"] { outline: none; }
-        .annotation-endpoint { position: absolute; width: 10px; height: 10px; background: white; border: 2px solid #f6ad55; border-radius: 50%; cursor: crosshair; z-index: 20; }
+        .annotation-endpoint { position: absolute; width: 10px; height: 10px; background: white; border: 2px solid #f6ad55; border-radius: 50%; cursor: crosshair; z-index: 20; touch-action: none; }
         .annotation.selected { filter: drop-shadow(0 0 8px #f6ad55); }
 
         /* 框選工具 */
@@ -456,6 +457,13 @@
         let annotationMode = null;
         let draggingEndpoint = null;
         let hideBallNum = false;  // 隱藏籃球編號狀態
+
+        // 統一取得滑鼠或觸控座標
+        function getCoords(e) {
+            const src = e.touches && e.touches.length > 0 ? e.touches[0] :
+                        (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : e);
+            return { clientX: src.clientX, clientY: src.clientY };
+        }
 
         // Undo/Redo 系統
         let historyStack = [[]];
@@ -837,19 +845,19 @@
                 el.style.left = d.x + 'px'; el.style.top = d.y + 'px';
                 
                 let isD = false;
-                el.onmousedown = (e) => {
-                    if (isPlaying || e.button !== 0) return;
-                    isD = true;
 
-                    // 如果點擊的是選中的球員，進入群組移動模式
+                const startItemDrag = (e) => {
+                    if (isPlaying) return;
+                    if (e.type === 'mousedown' && e.button !== 0) return;
+                    if (e.type === 'touchstart') e.preventDefault();
+
+                    isD = true;
                     const isSelected = el.classList.contains('selected');
                     let itemsToMove = isSelected ? Array.from(selectedItems) : [id];
 
-                    // 計算所有要移動的球員相對位置
                     const positions = {};
                     itemsToMove.forEach(itemId => {
-                        const itemEl = document.getElementById(itemId);
-                        if (itemEl && frames[currentIdx][itemId]) {
+                        if (frames[currentIdx][itemId]) {
                             positions[itemId] = {
                                 x: frames[currentIdx][itemId].x,
                                 y: frames[currentIdx][itemId].y
@@ -858,19 +866,21 @@
                     });
 
                     let r = cont.getBoundingClientRect();
-                    let sx = e.clientX - el.getBoundingClientRect().left;
-                    let sy = e.clientY - el.getBoundingClientRect().top;
+                    const c0 = getCoords(e);
+                    let sx = c0.clientX - el.getBoundingClientRect().left;
+                    let sy = c0.clientY - el.getBoundingClientRect().top;
                     let startX = frames[currentIdx][id].x;
                     let startY = frames[currentIdx][id].y;
 
-                    document.onmousemove = (e) => {
-                        if(!isD) return;
-                        let x = e.clientX - r.left - sx;
-                        let y = e.clientY - r.top - sy;
+                    const onMove = (ev) => {
+                        if (!isD) return;
+                        if (ev.type === 'touchmove') ev.preventDefault();
+                        const c = getCoords(ev);
+                        let x = c.clientX - r.left - sx;
+                        let y = c.clientY - r.top - sy;
                         let dx = x - startX;
                         let dy = y - startY;
 
-                        // 移動所有選中的項目
                         itemsToMove.forEach(itemId => {
                             const itemEl = document.getElementById(itemId);
                             if (itemEl && positions[itemId]) {
@@ -883,9 +893,13 @@
                             }
                         });
                     };
-                    document.onmouseup = () => {
+
+                    const onEnd = () => {
                         isD = false;
-                        document.onmousemove = null;
+                        document.removeEventListener('mousemove', onMove);
+                        document.removeEventListener('touchmove', onMove);
+                        document.removeEventListener('mouseup', onEnd);
+                        document.removeEventListener('touchend', onEnd);
 
                         // 檢查是否拖到垃圾桶上
                         const trashBin = document.getElementById('trash-bin');
@@ -898,8 +912,6 @@
                                 const itemRect = itemEl.getBoundingClientRect();
                                 const centerX = itemRect.left + itemRect.width / 2;
                                 const centerY = itemRect.top + itemRect.height / 2;
-
-                                // 檢查元素中心是否在垃圾桶範圍內
                                 if (centerX >= trashRect.left && centerX <= trashRect.right &&
                                     centerY >= trashRect.top && centerY <= trashRect.bottom) {
                                     trashDelete = true;
@@ -909,9 +921,7 @@
 
                         if (trashDelete) {
                             itemsToMove.forEach(itemId => {
-                                for (let i = currentIdx; i < frames.length; i++) {
-                                    delete frames[i][itemId];
-                                }
+                                for (let i = currentIdx; i < frames.length; i++) delete frames[i][itemId];
                             });
                             render();
                         } else {
@@ -927,8 +937,6 @@
                                         const itemRect = itemEl.getBoundingClientRect();
                                         const centerX = itemRect.left + itemRect.width / 2;
                                         const centerY = itemRect.top + itemRect.height / 2;
-
-                                        // 檢查元素中心是否在球場外
                                         if (centerX < courtRect.left || centerX > courtRect.right ||
                                             centerY < courtRect.top || centerY > courtRect.bottom) {
                                             shouldDelete = true;
@@ -938,9 +946,7 @@
 
                                 if (shouldDelete) {
                                     itemsToMove.forEach(itemId => {
-                                        for (let i = currentIdx; i < frames.length; i++) {
-                                            delete frames[i][itemId];
-                                        }
+                                        for (let i = currentIdx; i < frames.length; i++) delete frames[i][itemId];
                                     });
                                     render();
                                 }
@@ -949,7 +955,15 @@
 
                         saveHistory();
                     };
+
+                    document.addEventListener('mousemove', onMove);
+                    document.addEventListener('touchmove', onMove, { passive: false });
+                    document.addEventListener('mouseup', onEnd);
+                    document.addEventListener('touchend', onEnd);
                 };
+
+                el.addEventListener('mousedown', startItemDrag);
+                el.addEventListener('touchstart', startItemDrag, { passive: false });
                 el.oncontextmenu = (e) => {
                     e.preventDefault();
                     let now = Date.now();
@@ -1281,25 +1295,45 @@
                     container.style.backgroundColor = 'transparent';
 
                     let isD = false;
-                    container.onmousedown = (e) => {
-                        if (isPlaying || e.button !== 0) return;
+
+                    const startAnnoDrag = (e) => {
+                        if (isPlaying) return;
+                        if (e.type === 'mousedown' && e.button !== 0) return;
+                        if (e.type === 'touchstart') e.preventDefault();
                         isD = true;
                         let r = cont.getBoundingClientRect();
-                        let sx = e.clientX - r.left;
-                        let sy = e.clientY - r.top;
+                        const c0 = getCoords(e);
+                        let sx = c0.clientX - r.left;
+                        let sy = c0.clientY - r.top;
                         let ox1 = d.x1, oy1 = d.y1;
                         let ox2 = d.x2, oy2 = d.y2;
-                        document.onmousemove = (e) => {
+                        const onMove = (ev) => {
                             if (!isD) return;
-                            let x = e.clientX - r.left;
-                            let y = e.clientY - r.top;
+                            if (ev.type === 'touchmove') ev.preventDefault();
+                            const c = getCoords(ev);
+                            let x = c.clientX - r.left;
+                            let y = c.clientY - r.top;
                             let dx = x - sx, dy = y - sy;
                             d.x1 = ox1 + dx; d.y1 = oy1 + dy;
                             d.x2 = ox2 + dx; d.y2 = oy2 + dy;
                             render();
                         };
-                        document.onmouseup = () => { isD = false; document.onmousemove = null; saveHistory(); };
+                        const onEnd = () => {
+                            isD = false;
+                            document.removeEventListener('mousemove', onMove);
+                            document.removeEventListener('touchmove', onMove);
+                            document.removeEventListener('mouseup', onEnd);
+                            document.removeEventListener('touchend', onEnd);
+                            saveHistory();
+                        };
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('touchmove', onMove, { passive: false });
+                        document.addEventListener('mouseup', onEnd);
+                        document.addEventListener('touchend', onEnd);
                     };
+
+                    container.addEventListener('mousedown', startAnnoDrag);
+                    container.addEventListener('touchstart', startAnnoDrag, { passive: false });
 
                     // 右鍵雙擊刪除
                     container.oncontextmenu = (e) => {
@@ -1332,25 +1366,29 @@
                     const scaleYp1 = contRect.height / svgH;
                     p1.style.left = (d.x1 * scaleXp1 - 5) + 'px';
                     p1.style.top = (d.y1 * scaleYp1 - 5) + 'px';
-                    p1.onmousedown = (e) => {
+                    const startP1Drag = (e) => {
                         e.stopPropagation();
                         if (isPlaying) return;
+                        if (e.type === 'touchstart') e.preventDefault();
                         let r = cont.getBoundingClientRect();
-                        // 計算 SVG 與容器的縮放比例
                         const svg = document.getElementById('court-svg');
                         const viewBox = svg.getAttribute('viewBox').split(' ');
                         const svgWidth = parseFloat(viewBox[2]);
                         const svgHeight = parseFloat(viewBox[3]);
                         const scaleX = svgWidth / r.width;
                         const scaleY = svgHeight / r.height;
-                        document.onmousemove = (e) => {
-                            d.x1 = (e.clientX - r.left) * scaleX;
-                            d.y1 = (e.clientY - r.top) * scaleY;
+                        const onMove = (ev) => {
+                            if (ev.type === 'touchmove') ev.preventDefault();
+                            const c = getCoords(ev);
+                            d.x1 = (c.clientX - r.left) * scaleX;
+                            d.y1 = (c.clientY - r.top) * scaleY;
                             render();
                         };
-                        document.onmouseup = () => {
-                            document.onmousemove = null;
-                            // 檢查是否拖到垃圾桶上
+                        const onEnd = () => {
+                            document.removeEventListener('mousemove', onMove);
+                            document.removeEventListener('touchmove', onMove);
+                            document.removeEventListener('mouseup', onEnd);
+                            document.removeEventListener('touchend', onEnd);
                             const trashBin = document.getElementById('trash-bin');
                             const trashRect = trashBin.getBoundingClientRect();
                             const p1Rect = p1.getBoundingClientRect();
@@ -1358,14 +1396,18 @@
                             const centerY = p1Rect.top + p1Rect.height / 2;
                             if (centerX >= trashRect.left && centerX <= trashRect.right &&
                                 centerY >= trashRect.top && centerY <= trashRect.bottom) {
-                                for (let i = currentIdx; i < frames.length; i++) {
-                                    delete frames[i][id];
-                                }
+                                for (let i = currentIdx; i < frames.length; i++) delete frames[i][id];
                                 render();
                             }
                             saveHistory();
                         };
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('touchmove', onMove, { passive: false });
+                        document.addEventListener('mouseup', onEnd);
+                        document.addEventListener('touchend', onEnd);
                     };
+                    p1.addEventListener('mousedown', startP1Drag);
+                    p1.addEventListener('touchstart', startP1Drag, { passive: false });
                     cont.appendChild(p1);
 
                     // 端點控制圓 (終點)
@@ -1374,25 +1416,29 @@
                     p2.setAttribute('data-endpoint-id', `${id}-end`);
                     p2.style.left = (d.x2 * scaleXp1 - 5) + 'px';
                     p2.style.top = (d.y2 * scaleYp1 - 5) + 'px';
-                    p2.onmousedown = (e) => {
+                    const startP2Drag = (e) => {
                         e.stopPropagation();
                         if (isPlaying) return;
+                        if (e.type === 'touchstart') e.preventDefault();
                         let r = cont.getBoundingClientRect();
-                        // 計算 SVG 與容器的縮放比例
                         const svg = document.getElementById('court-svg');
                         const viewBox = svg.getAttribute('viewBox').split(' ');
                         const svgWidth = parseFloat(viewBox[2]);
                         const svgHeight = parseFloat(viewBox[3]);
                         const scaleX = svgWidth / r.width;
                         const scaleY = svgHeight / r.height;
-                        document.onmousemove = (e) => {
-                            d.x2 = (e.clientX - r.left) * scaleX;
-                            d.y2 = (e.clientY - r.top) * scaleY;
+                        const onMove = (ev) => {
+                            if (ev.type === 'touchmove') ev.preventDefault();
+                            const c = getCoords(ev);
+                            d.x2 = (c.clientX - r.left) * scaleX;
+                            d.y2 = (c.clientY - r.top) * scaleY;
                             render();
                         };
-                        document.onmouseup = () => {
-                            document.onmousemove = null;
-                            // 檢查是否拖到垃圾桶上
+                        const onEnd = () => {
+                            document.removeEventListener('mousemove', onMove);
+                            document.removeEventListener('touchmove', onMove);
+                            document.removeEventListener('mouseup', onEnd);
+                            document.removeEventListener('touchend', onEnd);
                             const trashBin = document.getElementById('trash-bin');
                             const trashRect = trashBin.getBoundingClientRect();
                             const p2Rect = p2.getBoundingClientRect();
@@ -1400,14 +1446,18 @@
                             const centerY = p2Rect.top + p2Rect.height / 2;
                             if (centerX >= trashRect.left && centerX <= trashRect.right &&
                                 centerY >= trashRect.top && centerY <= trashRect.bottom) {
-                                for (let i = currentIdx; i < frames.length; i++) {
-                                    delete frames[i][id];
-                                }
+                                for (let i = currentIdx; i < frames.length; i++) delete frames[i][id];
                                 render();
                             }
                             saveHistory();
                         };
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('touchmove', onMove, { passive: false });
+                        document.addEventListener('mouseup', onEnd);
+                        document.addEventListener('touchend', onEnd);
                     };
+                    p2.addEventListener('mousedown', startP2Drag);
+                    p2.addEventListener('touchstart', startP2Drag, { passive: false });
                     cont.appendChild(p2);
 
                 } else if (d.type === 'text') {
@@ -1422,28 +1472,54 @@
                     textEl.style.borderColor = d.color || '#ffffff';
 
                     let isD = false;
-                    textEl.onmousedown = (e) => {
-                        if (isPlaying || e.button !== 0 || textEl.contentEditable === 'true') return;
+                    let lastTapTime = 0;
+
+                    const startTextDrag = (e) => {
+                        if (isPlaying) return;
+                        if (e.type === 'mousedown' && e.button !== 0) return;
+                        if (textEl.contentEditable === 'true') return;
+                        if (e.type === 'touchstart') {
+                            e.preventDefault();
+                            // 觸控雙擊編輯（兩次 tap 間隔 < 300ms）
+                            const now = Date.now();
+                            if (now - lastTapTime < 300) {
+                                lastTapTime = 0;
+                                textEl.classList.add('editing');
+                                textEl.setAttribute('contenteditable', 'true');
+                                textEl.focus();
+                                const range = document.createRange();
+                                range.selectNodeContents(textEl);
+                                const sel = window.getSelection();
+                                sel.removeAllRanges();
+                                sel.addRange(range);
+                                return;
+                            }
+                            lastTapTime = now;
+                        }
                         isD = true;
-                        let r = cont.getBoundingClientRect();
-                        let startX = e.clientX;
-                        let startY = e.clientY;
+                        const c0 = getCoords(e);
+                        let startX = c0.clientX;
+                        let startY = c0.clientY;
                         let origX = d.x;
                         let origY = d.y;
 
-                        document.onmousemove = (e) => {
+                        const onMove = (ev) => {
                             if (!isD) return;
-                            let dx = e.clientX - startX;
-                            let dy = e.clientY - startY;
+                            if (ev.type === 'touchmove') ev.preventDefault();
+                            const c = getCoords(ev);
+                            let dx = c.clientX - startX;
+                            let dy = c.clientY - startY;
                             d.x = origX + dx;
                             d.y = origY + dy;
                             textEl.style.left = d.x + 'px';
                             textEl.style.top = d.y + 'px';
                         };
-                        document.onmouseup = () => {
+                        const onEnd = () => {
                             isD = false;
-                            document.onmousemove = null;
-                            // 檢查是否拖到垃圾桶上
+                            document.removeEventListener('mousemove', onMove);
+                            document.removeEventListener('touchmove', onMove);
+                            document.removeEventListener('mouseup', onEnd);
+                            document.removeEventListener('touchend', onEnd);
                             const trashBin = document.getElementById('trash-bin');
                             const trashRect = trashBin.getBoundingClientRect();
                             const textRect = textEl.getBoundingClientRect();
@@ -1451,16 +1527,21 @@
                             const centerY = textRect.top + textRect.height / 2;
                             if (centerX >= trashRect.left && centerX <= trashRect.right &&
                                 centerY >= trashRect.top && centerY <= trashRect.bottom) {
-                                for (let i = currentIdx; i < frames.length; i++) {
-                                    delete frames[i][id];
-                                }
+                                for (let i = currentIdx; i < frames.length; i++) delete frames[i][id];
                                 render();
                             }
                             saveHistory();
                         };
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('touchmove', onMove, { passive: false });
+                        document.addEventListener('mouseup', onEnd);
+                        document.addEventListener('touchend', onEnd);
                     };
 
-                    // 雙擊編輯文字
+                    textEl.addEventListener('mousedown', startTextDrag);
+                    textEl.addEventListener('touchstart', startTextDrag, { passive: false });
+
+                    // 滑鼠雙擊編輯文字
                     textEl.ondblclick = (e) => {
                         e.stopPropagation();
                         textEl.classList.add('editing');
@@ -1720,18 +1801,28 @@
         });
 
         // 在球場區域上添加雙擊全屏監聽器
-        document.querySelector('.court-wrapper').addEventListener('dblclick', (e) => {
-            // 只在雙擊空白處（不是元素）時切換全屏
+        let lastCourtTapTime = 0;
+        const courtWrapper = document.querySelector('.court-wrapper');
+        const toggleFullscreenIfBackground = (e) => {
             if (!e.target.classList.contains('item') &&
                 !e.target.classList.contains('annotation') &&
                 e.target.id !== 'selection-box' &&
                 !e.target.closest('.tablet-floating-window')) {
-                // 切換全屏模式
                 if (document.body.classList.contains('fullscreen-mode')) {
                     exitFullscreen();
                 } else {
                     enterFullscreen();
                 }
+            }
+        };
+        courtWrapper.addEventListener('dblclick', toggleFullscreenIfBackground);
+        courtWrapper.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastCourtTapTime < 300) {
+                lastCourtTapTime = 0;
+                toggleFullscreenIfBackground(e);
+            } else {
+                lastCourtTapTime = now;
             }
         });
 
