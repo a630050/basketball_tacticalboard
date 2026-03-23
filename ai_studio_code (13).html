@@ -180,6 +180,11 @@
                 </div>
             </div>
 
+            <div class="section">
+                <span class="label">播放延遲（秒）</span>
+                <input type="number" id="play-delay" style="width:100%; padding:4px 6px; margin-top:5px; font-size:11px" min="0" max="10" value="1" step="0.1">
+            </div>
+
 
             <div class="section">
                 <div class="roster-grid" style="font-weight: bold; color: #f6ad55; margin-bottom:4px">
@@ -233,7 +238,7 @@
                 <div style="width: 20px;"></div>
                 <button class="nav-btn" id="play-btn" onclick="togglePlayStop()">▶️ 播放</button>
                 <button class="nav-btn" onclick="jumpToFrame(0)">🔄 重頭</button>
-                <input type="range" id="speed" style="width:120px; margin-left:8px" min="100" max="1500" value="800">
+                <input type="range" id="speed" style="width:120px; margin-left:8px" min="100" max="1500" value="640">
             </div>
 
             <!-- 註解說明區域 -->
@@ -1027,9 +1032,11 @@
                     }
                 }
                 updateUI();
-                playTimer = setTimeout(step, dur);
+                const delayMs = parseInt(document.getElementById('play-delay').value) * 1000;
+                playTimer = setTimeout(step, dur + delayMs);
             };
-            setTimeout(step, dur);
+            const initialDelay = parseFloat(document.getElementById('play-delay').value) * 1000;
+            setTimeout(step, initialDelay);
         }
 
         function stop() {
