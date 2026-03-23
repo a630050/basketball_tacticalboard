@@ -22,25 +22,34 @@
         .label { display: block; margin-bottom: 5px; font-weight: bold; color: #aaa; }
 
         /* --- 球場區域 --- */
-        .court-area { flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #333; position: relative; }
+        .court-area { flex-grow: 1; display: flex; flex-direction: column; background: #333; position: relative; }
+        .court-wrapper { flex-grow: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 0; }
+        .frame-control-bar { background: #222; border-top: 1px solid #444; padding: 8px 12px; display: flex; align-items: center; gap: 4px; font-size: 12px; justify-content: center; }
+        .frame-control-bar .nav-btn { padding: 4px 8px; background: #444; border: 1px solid #555; border-radius: 4px; cursor: pointer; color: #f6ad55; font-weight: bold; }
+        .frame-control-bar .nav-btn:hover { background: #555; }
+        .frame-slider { width: 300px; max-width: 40vw; }
+        .frame-info-compact { color: #aaa; min-width: 45px; text-align: center; }
+        .notes-section { background: #1a1a1a; border-top: 1px solid #444; padding: 6px 12px; height: 40px; display: flex; flex-direction: column; }
+        .notes-section textarea { flex: 1; background: #000; color: #eee; border: 1px solid #444; border-radius: 3px; padding: 4px; font-family: monospace; font-size: 11px; resize: none; }
+        .notes-section textarea:focus { outline: none; border-color: #f6ad55; }
         #court-container { position: relative; background-color: var(--court-bg); border: 4px solid var(--line-color); box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        .court-half { width: 500px; height: 480px; }
-        .court-full { width: 900px; height: 480px; }
-        
+        .court-half { width: 450px; height: 432px; }
+        .court-full { width: 810px; height: 432px; }
+
         svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
         /* 隱藏場地線條，但保留標註線條（有 data-id 屬性的線）*/
-        svg.hide-lines rect:not([x="0"]), svg.hide-lines line:not([data-id]), svg.hide-lines path { opacity: 0; }
+        svg.hide-lines rect:not([x="0"]), svg.hide-lines line:not([data-id]), svg.hide-lines path, svg.hide-lines .hoop-circle { opacity: 0; }
 
         /* --- 元素樣式 --- */
         .item {
-            position: absolute; width: 34px; height: 34px; border-radius: 50%;
+            position: absolute; width: 28px; height: 28px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-weight: bold; cursor: move; user-select: none;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4); z-index: 10; font-size: 13px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4); z-index: 10; font-size: 11px;
         }
         .player-a { background: var(--player-a); color: white; border: 2px solid white; }
         .player-b { background: var(--player-b); color: white; border: 2px solid white; }
-        .ball { width: 22px; height: 22px; z-index: 99; background: radial-gradient(circle at 30% 30%, #f6ad55, #c05621); border: 1px solid #000; }
+        .ball { width: 18px; height: 18px; z-index: 99; background: radial-gradient(circle at 30% 30%, #f6ad55, #c05621); border: 1px solid #000; }
         .ball.hide-num { font-size: 0; } /* 隱藏籃球編號 */
 
         /* --- UI 元件 --- */
@@ -90,9 +99,13 @@
         /* 禎計數器 */
         #frame-counter { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #f6ad55; padding: 6px 12px; border: 1px solid #f6ad55; border-radius: 4px; font-size: 14px; font-weight: bold; z-index: 100; }
 
-        /* Help按鈕和Modal */
-        .help-btn { position: absolute; top: 12px; left: 12px; width: 28px; height: 28px; border-radius: 50%; background: #f6ad55; color: #1a1a1a; border: none; font-weight: bold; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 100; }
+        /* Help按鈕和快捷按鈕 */
+        .help-btn { position: absolute; top: 12px; left: 12px; height: 28px; padding: 0 10px; border-radius: 6px; background: #f6ad55; color: #1a1a1a; border: none; font-weight: bold; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; z-index: 100; white-space: nowrap; }
         .help-btn:hover { background: #fff; }
+        #delete-btn { left: 50px; background: #c53030; color: white; }
+        #delete-btn:hover { background: #e63946; }
+        #insert-btn { left: 115px; background: #2f855a; color: white; }
+        #insert-btn:hover { background: #40916c; }
         #help-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; overflow-y: auto; }
         .help-content { background: #1a1a1a; color: #eee; width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto; border: 2px solid #f6ad55; border-radius: 8px; padding: 30px; font-size: 13px; line-height: 1.6; }
         .help-content h2 { color: #f6ad55; margin-top: 0; font-size: 24px; }
@@ -102,6 +115,33 @@
         .help-content .shortcut { background: #222; padding: 2px 6px; border-radius: 3px; color: #ffeb99; font-family: monospace; }
         .help-close { position: absolute; top: 20px; right: 30px; background: #f6ad55; color: #1a1a1a; border: none; width: 32px; height: 32px; font-size: 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
         .help-close:hover { background: #fff; }
+
+        /* 平板快捷操作模式 - 浮動視窗 */
+        .tablet-floating-window { position: absolute; background: rgba(26, 26, 26, 0.95); border: 2px solid #f6ad55; border-radius: 8px; padding: 8px; max-height: calc(100vh - 220px); overflow-y: auto; z-index: 60; display: none; flex-direction: column; gap: 4px; min-width: 70px; }
+        .tablet-floating-window.active { display: flex; }
+        .tablet-floating-window.left { left: 12px; top: 70px; }
+        .tablet-floating-window.right { right: 12px; top: 70px; }
+        .tablet-window-title { color: #f6ad55; font-weight: bold; font-size: 11px; text-align: center; margin-bottom: 2px; }
+        .tablet-window-player { padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; color: white; font-size: 11px; cursor: pointer; user-select: none; transition: all 0.2s; white-space: nowrap; }
+        .tablet-window-player:hover { background: rgba(0,0,0,0.5); border-color: #f6ad55; }
+        .tablet-window-player.player-a { color: var(--player-a); }
+        .tablet-window-player.player-b { color: var(--player-b); }
+        .tablet-window-player.disabled { opacity: 0.4; cursor: not-allowed; }
+        .tablet-window-player.disabled:hover { background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.2); }
+
+        /* 全屏模式 */
+        body.fullscreen-mode { overflow: hidden; }
+        body.fullscreen-mode .main-wrapper { position: fixed; inset: 0; z-index: 9999; }
+        body.fullscreen-mode .sidebar { display: none; }
+        body.fullscreen-mode .court-area { background: #000; flex-direction: column; }
+        body.fullscreen-mode .court-wrapper { flex: 1; }
+        body.fullscreen-mode .notes-section { display: none; }
+        body.fullscreen-mode footer { display: none; }
+        .fullscreen-hint { position: absolute; top: 10px; right: 10px; color: #aaa; font-size: 10px; z-index: 100; }
+
+        /* 垃圾桶樣式 */
+        #trash-bin { background: transparent !important; color: #f6ad55; border: 2px solid #f6ad55; cursor: grab; transition: all 0.2s; }
+        #trash-bin:hover { background: rgba(246, 173, 85, 0.1) !important; box-shadow: 0 0 8px rgba(246, 173, 85, 0.5); }
     </style>
 </head>
 <body>
@@ -122,31 +162,15 @@
             </div>
 
             <div class="section">
-                <span class="label">場上元素</span>
-                <div style="display:flex; gap:5px; align-items: center;">
-                    <button class="btn" style="background:var(--player-a)" onclick="openRoster('player-a')">A隊</button>
-                    <button class="btn" style="background:var(--player-b)" onclick="openRoster('player-b')">B隊</button>
-                    <button class="btn" style="background:#c05621" onclick="addItem('ball')">🏀 球</button>
-                </div>
-                <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap">
-                    <div style="display:flex; gap:4px; align-items:center">
-                        <input type="checkbox" id="designated-chk" onchange="toggleOpt()"> <label for="designated-chk">指定人模式</label>
-                    </div>
-                    <select id="display-mode" style="display:none; width:auto; padding:3px 6px" onchange="render()">
-                        <option value="num">顯示背號</option>
-                        <option value="name">顯示名字</option>
-                    </select>
-                </div>
+                <span class="label">顯示模式</span>
+                <select id="display-mode" style="width:80px; padding:3px 5px; margin-top:5px; font-size:11px" onchange="onDisplayModeChange()">
+                    <option value="num">背號</option>
+                    <option value="name">名字</option>
+                </select>
             </div>
 
             <div class="section">
-                <span class="label">繪圖標註</span>
-                <div style="display:flex; gap:5px; margin-bottom:8px; flex-wrap:wrap">
-                    <button class="btn" onclick="addAnnotation('arrow')">→ 箭頭</button>
-                    <button class="btn" onclick="addAnnotation('line')">— 線條</button>
-                    <button class="btn" onclick="addAnnotation('text')">T 文字</button>
-                </div>
-                <span class="label" style="margin-top:5px">標註顏色</span>
+                <span class="label">標註顏色</span>
                 <div style="display:flex; gap:4px; flex-wrap:wrap">
                     <button style="width:24px; height:24px; background:white; border:2px solid #555; cursor:pointer" onclick="setAnnotationColor('#ffffff')" title="白"></button>
                     <button style="width:24px; height:24px; background:#ff0000; border:2px solid #555; cursor:pointer" onclick="setAnnotationColor('#ff0000')" title="紅"></button>
@@ -156,25 +180,6 @@
                 </div>
             </div>
 
-            <div class="section">
-                <span class="label">動畫管理</span>
-                <button class="btn btn-primary" style="width:100%; margin-bottom:8px" onclick="addFrame()">📸 新增下一禎</button>
-                
-                <div class="frame-nav">
-                    <span class="nav-arrow" onclick="prevFrame()">◀</span>
-                    <span id="frame-info" style="font-weight:bold">1 / 1</span>
-                    <span class="nav-arrow" onclick="nextFrame()">▶</span>
-                </div>
-                <input type="range" id="timeline" style="width:100%" min="0" max="0" value="0" oninput="jumpToFrame(this.value)">
-                
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:10px">
-                    <button class="btn" style="padding: 4px 8px;" onclick="play()">▶️ 播放</button>
-                    <button class="btn btn-danger" style="padding: 4px 8px;" onclick="stop()">⏹️ 停止</button>
-                    <button class="btn" style="padding: 4px 8px;" onclick="jumpToFrame(0)">🔄 重頭</button>
-                </div>
-                <span class="label" style="margin-top:10px">播放速度:</span>
-                <input type="range" id="speed" style="width:100%" min="100" max="1500" value="800">
-            </div>
 
             <div class="section">
                 <div class="roster-grid" style="font-weight: bold; color: #f6ad55; margin-bottom:4px">
@@ -194,17 +199,46 @@
                     </div>
                 </div>
                 <div style="display:flex; gap:5px">
-                    <button class="btn btn-danger" style="flex:1" onclick="clearAll()">🗑️ 全部清空</button>
+                    <button class="btn btn-danger" style="flex:1" onclick="clearAll()">🗑️ 清空腳本</button>
                 </div>
             </div>
         </aside>
 
         <main class="court-area">
-            <button class="help-btn" onclick="showHelp()" title="使用說明">?</button>
-            <div id="frame-counter">1 / 1</div>
-            <div id="court-container" class="court-half">
-                <svg id="court-svg"></svg>
-                <div id="selection-box"></div>
+            <div class="court-wrapper">
+                <button class="help-btn" id="help-btn" onclick="showHelp()" title="使用說明">?</button>
+                <button class="help-btn" id="delete-btn" onclick="deleteCurrentFrame()" title="刪除本禎">刪除禎</button>
+                <button class="help-btn" id="insert-btn" onclick="insertFrame()" title="插入下一禎">插入禎</button>
+                <div id="trash-bin" class="help-btn" style="left: auto; right: 150px;" title="拖曳元素到這裡刪除">垃圾桶</div>
+                <button class="help-btn" id="add-ball-btn" style="left: auto; right: 70px;" onclick="addItem('ball')" title="插入球">插入🏀</button>
+                <div id="frame-counter">1 / 1</div>
+                <div id="court-container" class="court-half">
+                    <svg id="court-svg"></svg>
+                    <div id="selection-box"></div>
+                </div>
+                <!-- 平板快捷操作模式浮動視窗 -->
+                <div id="tablet-window-left" class="tablet-floating-window left"></div>
+                <div id="tablet-window-right" class="tablet-floating-window right"></div>
+            </div>
+
+            <!-- 禎快捷控制欄 -->
+            <div class="frame-control-bar">
+                <button class="nav-btn" onclick="addAnnotation('arrow')">→</button>
+                <button class="nav-btn" onclick="addAnnotation('text')">T</button>
+                <div style="width: 20px;"></div>
+                <button class="nav-btn" onclick="prevFrame()">◀ 上一禎</button>
+                <input type="range" id="timeline-compact" class="frame-slider" min="0" max="0" value="0" oninput="jumpToFrame(this.value)">
+                <span class="frame-info-compact" id="frame-info-compact">1 / 1</span>
+                <button class="nav-btn" onclick="nextFrame()">下一禎 ▶</button>
+                <div style="width: 20px;"></div>
+                <button class="nav-btn" id="play-btn" onclick="togglePlayStop()">▶️ 播放</button>
+                <button class="nav-btn" onclick="jumpToFrame(0)">🔄 重頭</button>
+                <input type="range" id="speed" style="width:120px; margin-left:8px" min="100" max="1500" value="800">
+            </div>
+
+            <!-- 註解說明區域 -->
+            <div class="notes-section">
+                <textarea id="frame-notes" placeholder="輸入本禎的動作說明..." onchange="saveFrameNotes()"></textarea>
             </div>
         </main>
     </div>
@@ -234,6 +268,14 @@
                 <li><strong>取消選中：</strong>左鍵點擊空白處取消所有選中狀態</li>
             </ul>
 
+            <h3>📱 平板快捷操作模式</h3>
+            <ul>
+                <li><strong>啟用模式：</strong>勾選「平板快捷操作模式」後，A隊球員顯示在左側，B隊球員顯示在右側</li>
+                <li><strong>新增球員：</strong>按住左側或右側的球員頭像，拖進場內即可新增該球員到當前位置</li>
+                <li><strong>刪除球員：</strong>按住場上的球員，拖到場外（超出球場邊界），球員即刪除並歸位到原側邊欄</li>
+                <li><strong>快速配置：</strong>適合平板使用，球員列表始終可見，快速配置陣容無需切換頁面</li>
+            </ul>
+
             <h3>✏️ 繪圖標註工具</h3>
             <ul>
                 <li><strong>新增箭頭：</strong>側邊欄點「→ 箭頭」，在場上會生成可拖曳的箭頭</li>
@@ -247,7 +289,8 @@
 
             <h3>🎬 動畫製作</h3>
             <ul>
-                <li><strong>新增禎：</strong>側邊欄點「📸 新增下一禎」，會複製當前禎的所有元素</li>
+                <li><strong>插入禎：</strong>側邊欄點「📸 插入下一禎」，會在當前禎後複製新禎。若非最後禎會提示確認</li>
+                <li><strong>刪除禎：</strong>側邊欄點「🗑️ 刪除本禎」，會刪除當前禎及其獨有元素（不可復原）</li>
                 <li><strong>跳轉禎數：</strong>側邊欄中間的 ◀ ▶ 按鈕可前後跳轉，或直接調動進度條</li>
                 <li><strong>播放動畫：</strong>點「▶️ 播放」觀看從當前禎開始的動畫，元素會平滑移動</li>
                 <li><strong>停止播放：</strong>點「⏹️ 停止」暫停播放</li>
@@ -290,7 +333,9 @@
             <h3>❓ 常見問題</h3>
             <ul>
                 <li><strong>Q：為什麼新增的球員第一禎看不到？</strong> A：新增的元素只出現在當前禎及之後，前面禎沒有。返回第一禎時才會看到。</li>
-                <li><strong>Q：如何複製某一禎？</strong> A：跳轉到該禎，點「新增下一禎」即可複製所有元素。</li>
+                <li><strong>Q：如何複製某一禎？</strong> A：跳轉到該禎，點「📸 插入下一禎」即可複製所有元素到新禎。</li>
+                <li><strong>Q：可以在中間插入新禎嗎？</strong> A：可以。在任何禎點「📸 插入下一禎」，若非最後禎會提示確認，新禎會插在該禎之後。</li>
+                <li><strong>Q：如何刪除某一禎？</strong> A：跳轉到該禎，點「🗑️ 刪除本禎」確認即可。該禎的獨有元素也會被刪除。</li>
                 <li><strong>Q：播放時元素為什麼不動？</strong> A：元素必須在前後禎都存在才會有動畫。檢查當前禎和下一禎是否都有該元素。</li>
                 <li><strong>Q：如何修改球員名字？</strong> A：側邊欄下方的「A隊名單」「B隊名單」中可直接修改，或勾選「指定人模式」選擇具體球員。</li>
             </ul>
@@ -319,7 +364,23 @@
         let isPlaying = false;
         let playTimer = null;
         let roster = {
-            'player-a': Array.from({length: 15}, (_, i) => ({ num: (i+1).toString(), name: 'A' + (i+1) })),
+            'player-a': [
+                { num: '1', name: '嘉秘' },
+                { num: '2', name: '欣瑜' },
+                { num: '4', name: '清芳' },
+                { num: '5', name: '宜玲' },
+                { num: '10', name: '書敏' },
+                { num: '13', name: '靖寧' },
+                { num: '15', name: '力瑞' },
+                { num: '23', name: '妤甄' },
+                { num: '24', name: '宛靜' },
+                { num: '33', name: '郁嘉' },
+                { num: '37', name: '庭煒' },
+                { num: '43', name: '嘉伶' },
+                { num: '12', name: 'A12' },
+                { num: '14', name: 'A14' },
+                { num: '11', name: 'A11' }
+            ],
             'player-b': Array.from({length: 15}, (_, i) => ({ num: (i+1).toString(), name: 'B' + (i+1) }))
         };
 
@@ -367,8 +428,8 @@
                     const div = document.createElement('div');
                     div.className = 'roster-row';
                     div.innerHTML = `
-                        <input type="text" class="in-num" value="${p.num}" maxlength="2" onchange="roster['player-${t}'][${i}].num=this.value; render()">
-                        <input type="text" class="in-name" value="${p.name}" maxlength="2" onchange="roster['player-${t}'][${i}].name=this.value; render()">
+                        <input type="text" class="in-num" value="${p.num}" maxlength="2" onchange="roster['player-${t}'][${i}].num=this.value; render(); if(tabletModeEnabled) updateTabletWindows();">
+                        <input type="text" class="in-name" value="${p.name}" maxlength="2" onchange="roster['player-${t}'][${i}].name=this.value; render(); if(tabletModeEnabled) updateTabletWindows();">
                     `;
                     col.appendChild(div);
                 });
@@ -382,6 +443,7 @@
                     'player-b': Array.from({length: 15}, (_, i) => ({ num: (i+1).toString(), name: 'B' + (i+1) }))
                 };
                 initRoster();
+                if (tabletModeEnabled) updateTabletWindows();
             }
         }
 
@@ -426,7 +488,7 @@
                     <line x1="220" y1="11" x2="280" y2="11" stroke="white" stroke-width="3"/>
 
                     <!-- 籃框圓 直徑=15px 半徑=7.5 -->
-                    <circle cx="250" cy="23" r="7.5" fill="none" stroke="white" stroke-width="2"/>
+                    <circle class="hoop-circle" cx="250" cy="23" r="7.5" fill="none" stroke="white" stroke-width="2"/>
 
                     <!-- 籃框連線(籃板到籃框) -->
                     <line x1="250" y1="11" x2="250" y2="15.5" stroke="white" stroke-width="2"/>
@@ -490,7 +552,7 @@
                     <line x1="40" y1="211" x2="40" y2="269" stroke="white" stroke-width="3"/>
 
                     <!-- 籃框圓 直徑=15px -->
-                    <circle cx="51" cy="240" r="7.5" fill="none" stroke="white" stroke-width="2"/>
+                    <circle class="hoop-circle" cx="51" cy="240" r="7.5" fill="none" stroke="white" stroke-width="2"/>
 
                     <!-- 籃框連線 -->
                     <line x1="40" y1="240" x2="44" y2="240" stroke="white" stroke-width="2"/>
@@ -528,7 +590,7 @@
                     <line x1="860" y1="211" x2="860" y2="269" stroke="white" stroke-width="3"/>
 
                     <!-- 籃框圓 -->
-                    <circle cx="849" cy="240" r="7.5" fill="none" stroke="white" stroke-width="2"/>
+                    <circle class="hoop-circle" cx="849" cy="240" r="7.5" fill="none" stroke="white" stroke-width="2"/>
 
                     <!-- 籃框連線 -->
                     <line x1="860" y1="240" x2="856" y2="240" stroke="white" stroke-width="2"/>
@@ -547,7 +609,15 @@
         }
 
         // --- 3. 動態管理 ---
-        function toggleOpt() { document.getElementById('display-mode').style.display = document.getElementById('designated-chk').checked ? 'block' : 'none'; }
+        function toggleOpt() {
+            // 指定人模式默認啟用，display-mode始終顯示
+            if (tabletModeEnabled) updateTabletWindows();
+        }
+
+        function onDisplayModeChange() {
+            if (tabletModeEnabled) updateTabletWindows();
+            render();
+        }
 
         function toggleHideLines() {
             const svg = document.getElementById('court-svg');
@@ -564,14 +634,68 @@
             render();
         }
 
-        function openRoster(team) {
-            if (!document.getElementById('designated-chk').checked) {
-                // 非指定人模式：使用 A B C D... 代稱
-                const existingCount = Object.values(frames[currentIdx]).filter(i => i.team === team && i.label && /^[A-Z]$/.test(i.label)).length;
-                const label = String.fromCharCode(65 + existingCount); // A=65, B=66, ...
-                addItem(team, label, 'rnd-'+Date.now());
-                return;
+        let tabletModeEnabled = true; // 預設啟用
+
+        function toggleTabletMode() {
+            const leftWindow = document.getElementById('tablet-window-left');
+            const rightWindow = document.getElementById('tablet-window-right');
+
+            if (tabletModeEnabled) {
+                leftWindow.classList.add('active');
+                rightWindow.classList.add('active');
+                updateTabletWindows();
+            } else {
+                leftWindow.classList.remove('active');
+                rightWindow.classList.remove('active');
             }
+        }
+
+        function updateTabletWindows() {
+            const leftWindow = document.getElementById('tablet-window-left');
+            const rightWindow = document.getElementById('tablet-window-right');
+
+            leftWindow.innerHTML = '<div class="tablet-window-title">A隊</div>';
+            rightWindow.innerHTML = '<div class="tablet-window-title">B隊</div>';
+
+            // 取得場上已有的球員 rosIdx
+            const activeOnCourtA = Object.values(frames[currentIdx]).filter(i => i.team === 'player-a').map(i => i.rosIdx);
+            const activeOnCourtB = Object.values(frames[currentIdx]).filter(i => i.team === 'player-b').map(i => i.rosIdx);
+
+            // A隊顯示在左側
+            roster['player-a'].forEach((player, idx) => {
+                const btn = document.createElement('div');
+                btn.className = 'tablet-window-player';
+                const displayName = document.getElementById('display-mode').value === 'name' ? player.name : player.num;
+                btn.textContent = displayName;
+
+                if (activeOnCourtA.includes(idx)) {
+                    btn.classList.add('disabled');
+                    btn.onclick = null;
+                } else {
+                    btn.onclick = () => addItem('player-a', '', `idx-player-a-${idx}`, idx);
+                }
+                leftWindow.appendChild(btn);
+            });
+
+            // B隊顯示在右側
+            roster['player-b'].forEach((player, idx) => {
+                const btn = document.createElement('div');
+                btn.className = 'tablet-window-player';
+                const displayName = document.getElementById('display-mode').value === 'name' ? player.name : player.num;
+                btn.textContent = displayName;
+
+                if (activeOnCourtB.includes(idx)) {
+                    btn.classList.add('disabled');
+                    btn.onclick = null;
+                } else {
+                    btn.onclick = () => addItem('player-b', '', `idx-player-b-${idx}`, idx);
+                }
+                rightWindow.appendChild(btn);
+            });
+        }
+
+        function openRoster(team) {
+            // 指定人模式始終啟用
             const overlay = document.getElementById('picker-overlay');
             const box = overlay.querySelector('.picker-box');
             box.innerHTML = '';
@@ -599,7 +723,7 @@
                 ballNum = (Math.max(...existingBalls.map(b => b.ballNum || 0), 0) + 1).toString();
             }
 
-            const itm = { id, type, team: type, rosIdx, label, ballNum, x: 230, y: 380 };
+            const itm = { id, type, team: type, rosIdx, label, ballNum, x: 207, y: 342 };
             // 只在當前幀及之後的幀添加該元素
             for (let i = currentIdx; i < frames.length; i++) {
                 if (!frames[i][id]) {
@@ -686,7 +810,72 @@
                             }
                         });
                     };
-                    document.onmouseup = () => { isD = false; document.onmousemove = null; saveHistory(); };
+                    document.onmouseup = () => {
+                        isD = false;
+                        document.onmousemove = null;
+
+                        // 檢查是否拖到垃圾桶上
+                        const trashBin = document.getElementById('trash-bin');
+                        const trashRect = trashBin.getBoundingClientRect();
+                        let trashDelete = false;
+
+                        itemsToMove.forEach(itemId => {
+                            const itemEl = document.getElementById(itemId);
+                            if (itemEl) {
+                                const itemRect = itemEl.getBoundingClientRect();
+                                const centerX = itemRect.left + itemRect.width / 2;
+                                const centerY = itemRect.top + itemRect.height / 2;
+
+                                // 檢查元素中心是否在垃圾桶範圍內
+                                if (centerX >= trashRect.left && centerX <= trashRect.right &&
+                                    centerY >= trashRect.top && centerY <= trashRect.bottom) {
+                                    trashDelete = true;
+                                }
+                            }
+                        });
+
+                        if (trashDelete) {
+                            itemsToMove.forEach(itemId => {
+                                for (let i = currentIdx; i < frames.length; i++) {
+                                    delete frames[i][itemId];
+                                }
+                            });
+                            render();
+                        } else {
+                            // 平板模式：檢查是否拖到框線外
+                            if (tabletModeEnabled && d.type === 'player') {
+                                const courtEl = document.getElementById('court-container');
+                                const courtRect = courtEl.getBoundingClientRect();
+                                let shouldDelete = false;
+
+                                itemsToMove.forEach(itemId => {
+                                    const itemEl = document.getElementById(itemId);
+                                    if (itemEl) {
+                                        const itemRect = itemEl.getBoundingClientRect();
+                                        const centerX = itemRect.left + itemRect.width / 2;
+                                        const centerY = itemRect.top + itemRect.height / 2;
+
+                                        // 檢查元素中心是否在球場外
+                                        if (centerX < courtRect.left || centerX > courtRect.right ||
+                                            centerY < courtRect.top || centerY > courtRect.bottom) {
+                                            shouldDelete = true;
+                                        }
+                                    }
+                                });
+
+                                if (shouldDelete) {
+                                    itemsToMove.forEach(itemId => {
+                                        for (let i = currentIdx; i < frames.length; i++) {
+                                            delete frames[i][itemId];
+                                        }
+                                    });
+                                    render();
+                                }
+                            }
+                        }
+
+                        saveHistory();
+                    };
                 };
                 el.oncontextmenu = (e) => {
                     e.preventDefault();
@@ -704,17 +893,46 @@
                 cont.appendChild(el);
             }
             renderAnnotations();
+            if (tabletModeEnabled) updateTabletWindows();
             updateUI();
         }
 
         // --- 4. 偵管理 ---
-        function addFrame() {
-            const prevFrame = frames[currentIdx];
-            const newFrame = JSON.parse(JSON.stringify(prevFrame));
-            frames.push(newFrame);
-            currentIdx = frames.length - 1;
+        function insertFrame() {
+            const isLastFrame = currentIdx === frames.length - 1;
+
+            if (!isLastFrame) {
+                if (!confirm(`你並非在最後面新增，是否確認在第 ${currentIdx + 1} 和第 ${currentIdx + 2} 禎之間插入新禎？\n\n新禎將複製第 ${currentIdx + 1} 禎的內容。`)) {
+                    return;
+                }
+            }
+
+            const frameToClone = frames[currentIdx];
+            const newFrame = JSON.parse(JSON.stringify(frameToClone));
+            frames.splice(currentIdx + 1, 0, newFrame);
+
+            // 保持在原位置（現在指向新插入的幀）
+            currentIdx = currentIdx + 1;
             render();
+            updateUI();
         }
+
+        function deleteCurrentFrame() {
+            if (frames.length === 1) {
+                alert('至少要保留一禎！');
+                return;
+            }
+
+            if (!confirm(`確定要刪除第 ${currentIdx + 1} 禎？\n\n該禎的獨有元素將被刪除，無法復原。`)) {
+                return;
+            }
+
+            frames.splice(currentIdx, 1);
+            currentIdx = Math.min(currentIdx, frames.length - 1);
+            render();
+            updateUI();
+        }
+
         function jumpToFrame(i) { stop(); currentIdx = parseInt(i); render(); }
         function prevFrame() { if(currentIdx > 0) jumpToFrame(currentIdx - 1); }
         function nextFrame() { if(currentIdx < frames.length - 1) jumpToFrame(currentIdx + 1); }
@@ -819,13 +1037,50 @@
             clearTimeout(playTimer);
             document.querySelectorAll('.item, .annotation, .annotation-arrow, .annotation-text, .annotation-endpoint').forEach(el => el.style.transition = 'none');
             document.querySelectorAll('line[data-id]').forEach(el => el.style.transition = 'none');
+            updatePlayButtonState();
+        }
+
+        function togglePlayStop() {
+            if (isPlaying) {
+                stop();
+            } else {
+                play();
+                updatePlayButtonState();
+            }
+        }
+
+        function updatePlayButtonState() {
+            const playBtn = document.getElementById('play-btn');
+            if (isPlaying) {
+                playBtn.textContent = '⏹️ 停止';
+            } else {
+                playBtn.textContent = '▶️ 播放';
+            }
         }
 
         function updateUI() {
             document.getElementById('frame-info').innerText = `${currentIdx + 1} / ${frames.length}`;
             document.getElementById('frame-counter').innerText = `${currentIdx + 1} / ${frames.length}`;
+            document.getElementById('frame-info-compact').innerText = `${currentIdx + 1} / ${frames.length}`;
             const t = document.getElementById('timeline');
             t.max = frames.length - 1; t.value = currentIdx;
+            const tc = document.getElementById('timeline-compact');
+            tc.max = frames.length - 1; tc.value = currentIdx;
+            updateFrameNotes();
+        }
+
+        function saveFrameNotes() {
+            const notes = document.getElementById('frame-notes').value;
+            if (!frames[currentIdx]._notes) {
+                frames[currentIdx]._notes = '';
+            }
+            frames[currentIdx]._notes = notes;
+            saveHistory();
+        }
+
+        function updateFrameNotes() {
+            const notes = frames[currentIdx]._notes || '';
+            document.getElementById('frame-notes').value = notes;
         }
 
         // --- 5. 標註工具函數 ---
@@ -948,18 +1203,49 @@
                     const p1 = document.createElement('div');
                     p1.className = 'annotation-endpoint';
                     p1.setAttribute('data-endpoint-id', `${id}-start`);
-                    p1.style.left = (d.x1 - 5) + 'px';
-                    p1.style.top = (d.y1 - 5) + 'px';
+                    // 計算 SVG 與容器的縮放比例
+                    const contRect = cont.getBoundingClientRect();
+                    const svgEl = document.getElementById('court-svg');
+                    const viewBoxStr = svgEl.getAttribute('viewBox').split(' ');
+                    const svgW = parseFloat(viewBoxStr[2]);
+                    const svgH = parseFloat(viewBoxStr[3]);
+                    const scaleXp1 = contRect.width / svgW;
+                    const scaleYp1 = contRect.height / svgH;
+                    p1.style.left = (d.x1 * scaleXp1 - 5) + 'px';
+                    p1.style.top = (d.y1 * scaleYp1 - 5) + 'px';
                     p1.onmousedown = (e) => {
                         e.stopPropagation();
                         if (isPlaying) return;
                         let r = cont.getBoundingClientRect();
+                        // 計算 SVG 與容器的縮放比例
+                        const svg = document.getElementById('court-svg');
+                        const viewBox = svg.getAttribute('viewBox').split(' ');
+                        const svgWidth = parseFloat(viewBox[2]);
+                        const svgHeight = parseFloat(viewBox[3]);
+                        const scaleX = svgWidth / r.width;
+                        const scaleY = svgHeight / r.height;
                         document.onmousemove = (e) => {
-                            d.x1 = e.clientX - r.left;
-                            d.y1 = e.clientY - r.top;
+                            d.x1 = (e.clientX - r.left) * scaleX;
+                            d.y1 = (e.clientY - r.top) * scaleY;
                             render();
                         };
-                        document.onmouseup = () => { document.onmousemove = null; saveHistory(); };
+                        document.onmouseup = () => {
+                            document.onmousemove = null;
+                            // 檢查是否拖到垃圾桶上
+                            const trashBin = document.getElementById('trash-bin');
+                            const trashRect = trashBin.getBoundingClientRect();
+                            const p1Rect = p1.getBoundingClientRect();
+                            const centerX = p1Rect.left + p1Rect.width / 2;
+                            const centerY = p1Rect.top + p1Rect.height / 2;
+                            if (centerX >= trashRect.left && centerX <= trashRect.right &&
+                                centerY >= trashRect.top && centerY <= trashRect.bottom) {
+                                for (let i = currentIdx; i < frames.length; i++) {
+                                    delete frames[i][id];
+                                }
+                                render();
+                            }
+                            saveHistory();
+                        };
                     };
                     cont.appendChild(p1);
 
@@ -967,18 +1253,41 @@
                     const p2 = document.createElement('div');
                     p2.className = 'annotation-endpoint';
                     p2.setAttribute('data-endpoint-id', `${id}-end`);
-                    p2.style.left = (d.x2 - 5) + 'px';
-                    p2.style.top = (d.y2 - 5) + 'px';
+                    p2.style.left = (d.x2 * scaleXp1 - 5) + 'px';
+                    p2.style.top = (d.y2 * scaleYp1 - 5) + 'px';
                     p2.onmousedown = (e) => {
                         e.stopPropagation();
                         if (isPlaying) return;
                         let r = cont.getBoundingClientRect();
+                        // 計算 SVG 與容器的縮放比例
+                        const svg = document.getElementById('court-svg');
+                        const viewBox = svg.getAttribute('viewBox').split(' ');
+                        const svgWidth = parseFloat(viewBox[2]);
+                        const svgHeight = parseFloat(viewBox[3]);
+                        const scaleX = svgWidth / r.width;
+                        const scaleY = svgHeight / r.height;
                         document.onmousemove = (e) => {
-                            d.x2 = e.clientX - r.left;
-                            d.y2 = e.clientY - r.top;
+                            d.x2 = (e.clientX - r.left) * scaleX;
+                            d.y2 = (e.clientY - r.top) * scaleY;
                             render();
                         };
-                        document.onmouseup = () => { document.onmousemove = null; saveHistory(); };
+                        document.onmouseup = () => {
+                            document.onmousemove = null;
+                            // 檢查是否拖到垃圾桶上
+                            const trashBin = document.getElementById('trash-bin');
+                            const trashRect = trashBin.getBoundingClientRect();
+                            const p2Rect = p2.getBoundingClientRect();
+                            const centerX = p2Rect.left + p2Rect.width / 2;
+                            const centerY = p2Rect.top + p2Rect.height / 2;
+                            if (centerX >= trashRect.left && centerX <= trashRect.right &&
+                                centerY >= trashRect.top && centerY <= trashRect.bottom) {
+                                for (let i = currentIdx; i < frames.length; i++) {
+                                    delete frames[i][id];
+                                }
+                                render();
+                            }
+                            saveHistory();
+                        };
                     };
                     cont.appendChild(p2);
 
@@ -1012,7 +1321,24 @@
                             textEl.style.left = d.x + 'px';
                             textEl.style.top = d.y + 'px';
                         };
-                        document.onmouseup = () => { isD = false; document.onmousemove = null; saveHistory(); };
+                        document.onmouseup = () => {
+                            isD = false;
+                            document.onmousemove = null;
+                            // 檢查是否拖到垃圾桶上
+                            const trashBin = document.getElementById('trash-bin');
+                            const trashRect = trashBin.getBoundingClientRect();
+                            const textRect = textEl.getBoundingClientRect();
+                            const centerX = textRect.left + textRect.width / 2;
+                            const centerY = textRect.top + textRect.height / 2;
+                            if (centerX >= trashRect.left && centerX <= trashRect.right &&
+                                centerY >= trashRect.top && centerY <= trashRect.bottom) {
+                                for (let i = currentIdx; i < frames.length; i++) {
+                                    delete frames[i][id];
+                                }
+                                render();
+                            }
+                            saveHistory();
+                        };
                     };
 
                     // 雙擊編輯文字
@@ -1062,7 +1388,6 @@
                 currentIdx,
                 annotationColor,
                 // 保存配置設定
-                designatedMode: document.getElementById('designated-chk').checked,
                 displayMode: document.getElementById('display-mode').value,
                 hideLines: document.getElementById('hide-lines-chk').checked,
                 hideBallNum: document.getElementById('hide-ball-num-chk').checked
@@ -1090,10 +1415,6 @@
                         historyIndex = 0;
 
                         // 恢復配置設定
-                        if (d.designatedMode !== undefined) {
-                            document.getElementById('designated-chk').checked = d.designatedMode;
-                            toggleOpt();
-                        }
                         if (d.displayMode !== undefined) {
                             document.getElementById('display-mode').value = d.displayMode;
                         }
@@ -1105,8 +1426,11 @@
                             document.getElementById('hide-ball-num-chk').checked = d.hideBallNum;
                             toggleHideBallNum();
                         }
+                        // 指定人模式和平板模式現在默認啟用
+                        updateTabletWindows();
 
                         initRoster();
+                        if (tabletModeEnabled) updateTabletWindows();
                         jumpToFrame(currentIdx);
                     } catch (err) {
                         alert('檔案讀取失敗: ' + err.message);
@@ -1246,16 +1570,101 @@
             document.getElementById('help-modal').style.display = 'none';
         }
 
-        // Esc 鍵關閉 Help
+        // Esc 鍵關閉 Help 或全屏
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 hideHelp();
+                exitFullscreen();
+            }
+        });
+
+        // 全屏模式函數
+        function enterFullscreen() {
+            document.body.classList.add('fullscreen-mode');
+        }
+
+        function exitFullscreen() {
+            document.body.classList.remove('fullscreen-mode');
+        }
+
+        // 垃圾桶互動
+        const trashBin = document.getElementById('trash-bin');
+        document.addEventListener('dragover', (e) => {
+            // 檢查是否有元素被拖曳
+            const selectedItems = document.querySelectorAll('.item');
+            let hasDraggingItem = false;
+            selectedItems.forEach(item => {
+                if (item.style.opacity !== '1') {
+                    hasDraggingItem = true;
+                }
+            });
+        });
+
+        // 在球場區域上添加雙擊全屏監聽器
+        document.querySelector('.court-wrapper').addEventListener('dblclick', (e) => {
+            // 只在雙擊空白處（不是元素）時切換全屏
+            if (!e.target.classList.contains('item') &&
+                !e.target.classList.contains('annotation') &&
+                e.target.id !== 'selection-box' &&
+                !e.target.closest('.tablet-floating-window')) {
+                // 切換全屏模式
+                if (document.body.classList.contains('fullscreen-mode')) {
+                    exitFullscreen();
+                } else {
+                    enterFullscreen();
+                }
+            }
+        });
+
+        // 初始化拖放事件（平板模式）
+        container.addEventListener('dragover', (e) => {
+            if (tabletModeEnabled && tabletDragSource) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            }
+        });
+
+        container.addEventListener('drop', (e) => {
+            if (tabletModeEnabled && tabletDragSource) {
+                e.preventDefault();
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // 檢查是否在場地範圍內
+                const isInside = x >= 0 && x <= container.offsetWidth && y >= 0 && y <= container.offsetHeight;
+
+                if (isInside) {
+                    // 新增球員到場上
+                    const id = tabletDragSource.team + '-' + Date.now();
+                    const item = {
+                        id,
+                        type: 'player',
+                        team: tabletDragSource.team,
+                        rosIdx: tabletDragSource.rosIdx,
+                        label: roster[tabletDragSource.team][tabletDragSource.rosIdx].num,
+                        x: Math.round(x),
+                        y: Math.round(y)
+                    };
+
+                    // 添加到當前禎及之後的所有禎
+                    for (let i = currentIdx; i < frames.length; i++) {
+                        if (!frames[i][id]) {
+                            frames[i][id] = { ...item };
+                        }
+                    }
+                    saveHistory();
+                    render();
+                }
+
+                tabletDragSource = null;
             }
         });
 
         initRoster();
         updateCourt('half');
-        render();
+        toggleTabletMode();  // 預設啟動平板快捷模式（會設置 tabletModeEnabled = true）
+        render();  // 之後再 render，這樣浮動窗口就會被更新
     </script>
 </body>
 </html>
