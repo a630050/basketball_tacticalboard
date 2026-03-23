@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>專業籃球戰術板 v6.0 - 精準繪圖與對稱全場</title>
+    <title>專業籃球戰術板 v7.0</title>
     <style>
         :root {
             --court-bg: #d49a4e;
@@ -144,6 +144,49 @@
         /* 垃圾桶樣式 */
         #trash-bin { background: transparent !important; color: #f6ad55; border: 2px solid #f6ad55; cursor: grab; transition: all 0.2s; }
         #trash-bin:hover { background: rgba(246, 173, 85, 0.1) !important; box-shadow: 0 0 8px rgba(246, 173, 85, 0.5); }
+
+        /* 快速初始化模態框 */
+        #quick-setup-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: flex; align-items: center; justify-content: center; }
+        .quick-setup-box { background: #1a1a1a; padding: 40px; border-radius: 12px; border: 3px solid #f6ad55; text-align: center; width: 90%; max-width: 400px; }
+        .quick-setup-box h2 { color: #f6ad55; margin: 0 0 30px 0; font-size: 24px; }
+        .quick-setup-box p { color: #ccc; font-size: 14px; margin-bottom: 30px; }
+        .quick-setup-buttons { display: flex; gap: 15px; flex-direction: column; }
+        .quick-setup-btn { padding: 15px 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.3s; }
+        .quick-setup-btn.add3 { background: #2f855a; color: white; }
+        .quick-setup-btn.add3:hover { background: #40916c; }
+        .quick-setup-btn.add5 { background: #2563eb; color: white; }
+        .quick-setup-btn.add5:hover { background: #3b82f6; }
+        .quick-setup-btn.skip { background: #444; color: #aaa; }
+        .quick-setup-btn.skip:hover { background: #555; color: white; }
+        .quick-setup-close { position: absolute; top: 20px; right: 20px; background: #f6ad55; color: #1a1a1a; border: none; width: 32px; height: 32px; font-size: 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .quick-setup-close:hover { background: #fff; }
+
+        /* 前一禎位置指示器 */
+        .prev-pos-indicator {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid #888;
+            background: rgba(136, 136, 136, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #888;
+            font-size: 10px;
+            user-select: none;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .prev-pos-indicator.ball-indicator {
+            width: 18px;
+            height: 18px;
+            font-size: 8px;
+        }
+        .prev-pos-indicator.player-indicator {
+            width: 28px;
+            height: 28px;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
@@ -159,6 +202,9 @@
                     </div>
                     <div>
                         <input type="checkbox" id="hide-ball-num-chk" onchange="toggleHideBallNum()"> <label for="hide-ball-num-chk">隱藏球編號</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="show-prev-pos-chk" onchange="toggleShowPrevPos()"> <label for="show-prev-pos-chk">隱藏前一禎位置</label>
                     </div>
                 </div>
             </div>
@@ -252,6 +298,19 @@
 
     <div id="picker-overlay" onclick="this.style.display='none'">
         <div class="picker-box" onclick="event.stopPropagation()"></div>
+    </div>
+
+    <div id="quick-setup-modal">
+        <button class="quick-setup-close" onclick="skipQuickSetup()">×</button>
+        <div class="quick-setup-box">
+            <h2>⚡ 快速開始</h2>
+            <p>選擇要快速加入的球員數量</p>
+            <div class="quick-setup-buttons">
+                <button class="quick-setup-btn add3" onclick="quickAddPlayers(3)">快速加 3 人（每隊）</button>
+                <button class="quick-setup-btn add5" onclick="quickAddPlayers(5)">快速加 5 人（每隊）</button>
+                <button class="quick-setup-btn skip" onclick="skipQuickSetup()">跳過</button>
+            </div>
+        </div>
     </div>
 
     <div id="help-modal" onclick="if(event.target.id==='help-modal') hideHelp()">
@@ -641,6 +700,13 @@
             render();
         }
 
+        let hidePrevPos = false;  // 預設不隱藏前一禎位置（即顯示）
+
+        function toggleShowPrevPos() {
+            hidePrevPos = document.getElementById('show-prev-pos-chk').checked;
+            render();
+        }
+
         let tabletModeEnabled = true; // 預設啟用
 
         function toggleTabletMode() {
@@ -900,9 +966,51 @@
                 cont.appendChild(el);
             }
             renderAnnotations();
+            renderPrevPosIndicators();
             if (tabletModeEnabled) updateTabletWindows();
             updateUI();
         }
+
+        function renderPrevPosIndicators() {
+            const cont = document.getElementById('court-container');
+
+            // 清除舊的指示器
+            cont.querySelectorAll('.prev-pos-indicator').forEach(el => el.remove());
+
+            // 如果隱藏、正在播放、或沒有前一禎，直接返回
+            if (hidePrevPos || isPlaying || currentIdx === 0) return;
+
+            const prevData = frames[currentIdx - 1];
+            const mode = document.getElementById('display-mode').value;
+
+            for (let id in prevData) {
+                const d = prevData[id];
+
+                // 跳過標註元素
+                if (d.type === 'arrow' || d.type === 'line' || d.type === 'text') continue;
+
+                const indicator = document.createElement('div');
+                indicator.className = 'prev-pos-indicator';
+
+                if (d.type === 'ball') {
+                    indicator.className += ' ball-indicator';
+                    indicator.innerText = d.ballNum || '';
+                } else {
+                    indicator.className += ' player-indicator';
+                    if (d.rosIdx !== null) {
+                        const p = roster[d.team][d.rosIdx];
+                        indicator.innerText = (mode === 'num') ? p.num : p.name;
+                    } else {
+                        indicator.innerText = d.label;
+                    }
+                }
+
+                indicator.style.left = d.x + 'px';
+                indicator.style.top = d.y + 'px';
+                cont.appendChild(indicator);
+            }
+        }
+
 
         // --- 4. 偵管理 ---
         function insertFrame() {
@@ -1672,10 +1780,97 @@
             }
         });
 
+        function quickAddPlayers(count) {
+            // 隱藏快速設置模態框
+            document.getElementById('quick-setup-modal').style.display = 'none';
+
+            // 從前12人中隨機選擇
+            const maxIdx = 12;
+
+            // 隨機選擇 A 隊球員
+            const aTeamIndices = [];
+            while (aTeamIndices.length < count) {
+                const idx = Math.floor(Math.random() * maxIdx);
+                if (!aTeamIndices.includes(idx)) {
+                    aTeamIndices.push(idx);
+                }
+            }
+
+            // 隨機選擇 B 隊球員
+            const bTeamIndices = [];
+            while (bTeamIndices.length < count) {
+                const idx = Math.floor(Math.random() * maxIdx);
+                if (!bTeamIndices.includes(idx)) {
+                    bTeamIndices.push(idx);
+                }
+            }
+
+            // 計算錯開位置的起點（球場中心附近）
+            const baseX = 225;
+            const baseY = 340;
+            const offsetX = 35;
+            const offsetY = 35;
+
+            // 添加球員到場上，位置錯開
+            aTeamIndices.forEach((idx, i) => {
+                const id = `player-a-${Date.now()}-${i}`;
+                const x = baseX - (count - 1) * offsetX / 2 + i * offsetX;
+                const y = baseY - (count - 1) * offsetY / 2;
+
+                const itm = {
+                    id,
+                    type: 'player-a',
+                    team: 'player-a',
+                    rosIdx: idx,
+                    label: roster['player-a'][idx].num,
+                    x: Math.round(x),
+                    y: Math.round(y)
+                };
+
+                for (let j = currentIdx; j < frames.length; j++) {
+                    if (!frames[j][id]) {
+                        frames[j][id] = { ...itm };
+                    }
+                }
+            });
+
+            bTeamIndices.forEach((idx, i) => {
+                const id = `player-b-${Date.now()}-${i}`;
+                const x = baseX - (count - 1) * offsetX / 2 + i * offsetX;
+                const y = baseY + (count - 1) * offsetY / 2;
+
+                const itm = {
+                    id,
+                    type: 'player-b',
+                    team: 'player-b',
+                    rosIdx: idx,
+                    label: roster['player-b'][idx].num,
+                    x: Math.round(x),
+                    y: Math.round(y)
+                };
+
+                for (let j = currentIdx; j < frames.length; j++) {
+                    if (!frames[j][id]) {
+                        frames[j][id] = { ...itm };
+                    }
+                }
+            });
+
+            saveHistory();
+            render();
+        }
+
+        function skipQuickSetup() {
+            document.getElementById('quick-setup-modal').style.display = 'none';
+        }
+
         initRoster();
         updateCourt('half');
         toggleTabletMode();  // 預設啟動平板快捷模式（會設置 tabletModeEnabled = true）
         render();  // 之後再 render，這樣浮動窗口就會被更新
+
+        // 顯示快速初始化模態框
+        document.getElementById('quick-setup-modal').style.display = 'flex';
     </script>
 </body>
 </html>
