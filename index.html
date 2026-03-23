@@ -1059,11 +1059,12 @@
         }
 
         function updateUI() {
-            document.getElementById('frame-info').innerText = `${currentIdx + 1} / ${frames.length}`;
+            const frameInfo = document.getElementById('frame-info');
+            if (frameInfo) frameInfo.innerText = `${currentIdx + 1} / ${frames.length}`;
             document.getElementById('frame-counter').innerText = `${currentIdx + 1} / ${frames.length}`;
             document.getElementById('frame-info-compact').innerText = `${currentIdx + 1} / ${frames.length}`;
-            const t = document.getElementById('timeline');
-            t.max = frames.length - 1; t.value = currentIdx;
+            const t = document.getElementById('timeline-compact');
+            if (t) { t.max = frames.length - 1; t.value = currentIdx; }
             const tc = document.getElementById('timeline-compact');
             tc.max = frames.length - 1; tc.value = currentIdx;
             updateFrameNotes();
